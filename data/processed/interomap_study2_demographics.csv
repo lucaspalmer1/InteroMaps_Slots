@@ -1,0 +1,427 @@
+PID,Age,Gender,Cultural background,Racial lineage
+4,55,Man,Other,Other
+9,34,Woman,European,European/White
+10,29,Man,African,Black
+14,25,Woman,European,European/White
+15,44,Man,Other,European/White
+16,44,Man,European,European/White
+17,27,Woman,Hispanic or Latinx,Hispanic
+18,51,Woman,European,European/White
+19,31,Woman,East Asian,Asian
+22,30,Man,European,European/White
+24,31,Man,European,European/White
+25,47,Man,South Asian,Asian
+27,42,Woman,European,European/White
+29,60,Man,European,European/White
+30,23,Man,African,Black
+32,41,Man,European,European/White
+33,28,Man,Hispanic or Latinx,Hispanic
+35,26,Woman,European,European/White
+36,34,Man,European,European/White
+37,38,Man,European,European/White
+39,39,Man,African,Black
+40,37,Man,European,European/White
+45,25,Man,South East Asian,Asian
+52,33,Man,European,European/White
+53,35,Woman,European,European/White
+54,46,Man,European,European/White
+55,39,Woman,South Asian,Asian
+56,42,Woman,European,European/White
+58,40,Woman,European,European/White
+59,41,Man,European,European/White
+60,39,Woman,European,European/White
+61,69,Man,European,European/White
+63,37,Man,European,European/White
+64,50,Man,"European, Indigenous, Other","European/White, Indigenous, Other"
+65,32,Man,African,Black
+67,31,Man,South Asian,Asian
+68,25,Man,European,European/White
+69,22,Woman,African,Black
+70,25,Man,African,Black
+71,32,Man,Indigenous,Indigenous
+73,37,Man,Hispanic or Latinx,Hispanic
+75,39,Man,South East Asian,Asian
+78,24,Woman,South East Asian,Asian
+79,32,Woman,African,Black
+81,32,Man,European,European/White
+82,26,Woman,Prefer not to answer,Prefer not to answer
+83,44,Man,European,European/White
+85,33,Man,European,European/White
+86,35,Man,African,Black
+87,39,Woman,European,European/White
+89,29,Woman,African,Black
+92,58,Man,European,European/White
+94,29,Man,South Asian,Asian
+99,51,Man,European,European/White
+100,30,Woman,European,European/White
+101,55,Woman,European,European/White
+102,54,Man,European,European/White
+105,46,Man,Other,Indigenous
+106,46,Man,European,European/White
+109,52,Woman,European,European/White
+112,41,Man,African,Black
+114,46,Man,European,European/White
+117,75,Woman,European,European/White
+118,62,Man,European,European/White
+119,31,Woman,African,Black
+121,50,Man,European,European/White
+122,30,Man,African,Black
+124,43,Man,South East Asian,Asian
+125,39,Man,European,European/White
+126,72,Woman,European,European/White
+130,45,Woman,European,European/White
+131,31,Woman,Hispanic or Latinx,Black
+132,49,Woman,Hispanic or Latinx,"European/White, Hispanic"
+133,38,Man,European,European/White
+135,30,Man,South Asian,Asian
+136,34,Woman,European,European/White
+137,30,Man,African,Black
+140,56,Woman,Other,European/White
+142,31,Man,African,Black
+143,59,Man,Other,European/White
+145,46,Woman,African,Black
+146,50,Man,European,European/White
+148,32,Woman,European,European/White
+150,60,Man,African,Black
+151,43,Woman,East Asian,Asian
+153,22,Man,"European, Other","European/White, Other"
+154,33,Woman,European,European/White
+159,39,Man,"European, Other",European/White
+161,55,Man,European,European/White
+163,46,Man,European,European/White
+164,29,Man,European,European/White
+165,37,Woman,East Asian,Asian
+167,47,Man,European,European/White
+169,41,Man,European,European/White
+172,51,Woman,European,European/White
+173,34,Man,European,European/White
+178,54,Woman,European,European/White
+180,31,Woman,European,European/White
+181,36,Woman,European,European/White
+189,35,Woman,East Asian,Asian
+190,35,Woman,European,European/White
+192,54,Woman,European,European/White
+193,56,Man,African,Black
+195,43,Woman,African,Black
+201,48,Man,European,European/White
+202,23,Man,African,Black
+203,49,Woman,Hispanic or Latinx,Hispanic
+204,47,Man,European,European/White
+207,27,Man,European,European/White
+208,44,Woman,European,European/White
+209,38,Woman,Don't know,European/White
+210,42,Woman,European,European/White
+212,30,Man,East Asian,Asian
+216,43,Man,African,Black
+217,35,Woman,European,European/White
+219,42,Man,European,European/White
+223,35,Woman,African,Black
+224,23,Man,European,European/White
+225,46,Man,East Asian,Asian
+228,28,Man,"African, European","Black, European/White"
+229,39,Woman,African,Black
+230,41,Woman,European,European/White
+233,27,Man,African,Black
+235,39,Woman,European,European/White
+236,45,Man,European,European/White
+237,42,Woman,European,European/White
+238,40,Woman,European,European/White
+239,29,Woman,European,European/White
+241,39,Man,European,European/White
+245,51,Man,European,European/White
+246,30,Man,South Asian,Asian
+251,51,Woman,Other,European/White
+255,38,Woman,European,European/White
+256,53,Man,European,European/White
+258,34,Woman,European,European/White
+259,24,Man,European,European/White
+262,38,Man,European,European/White
+266,26,Woman,European,European/White
+267,47,Man,European,European/White
+268,33,Woman,European,European/White
+269,35,Woman,European,European/White
+271,27,Man,African,Black
+272,37,Woman,European,European/White
+274,57,Woman,Prefer not to answer,European/White
+277,33,Woman,Indigenous,Indigenous
+282,29,Woman,European,European/White
+285,40,Woman,South East Asian,Asian
+290,53,Man,European,European/White
+293,43,Man,African,Black
+297,33,Man,European,European/White
+299,48,Woman,Hispanic or Latinx,Hispanic
+302,57,Man,European,European/White
+306,41,Woman,European,European/White
+309,36,Man,European,European/White
+310,42,Man,African,Black
+312,29,Man,European,European/White
+314,21,Woman,European,European/White
+318,31,Self-described/Other,European,European/White
+323,28,Man,Prefer not to answer,Prefer not to answer
+324,30,Man,European,European/White
+326,47,Woman,European,European/White
+327,31,Man,South Asian,Asian
+328,24,Man,East Asian,Asian
+330,35,Woman,European,European/White
+331,45,Woman,Hispanic or Latinx,Hispanic
+334,45,Woman,European,European/White
+335,31,Woman,European,European/White
+339,30,Woman,European,European/White
+340,73,Woman,European,European/White
+341,42,Woman,African,Black
+343,28,Woman,European,European/White
+345,43,Woman,African,Black
+346,30,Woman,Other,European/White
+347,25,Man,African,Black
+348,35,Woman,European,European/White
+354,48,Man,European,European/White
+355,27,Woman,European,European/White
+356,23,Woman,Prefer not to answer,Prefer not to answer
+357,28,Man,European,European/White
+361,38,Woman,European,European/White
+365,28,Woman,African,Black
+366,53,Man,South Asian,Asian
+367,54,Woman,European,European/White
+369,35,Woman,European,European/White
+370,53,Woman,European,"European/White, Indigenous"
+371,31,Woman,African,Black
+374,43,Woman,European,European/White
+377,30,Woman,European,European/White
+378,44,Woman,European,Black
+379,40,Man,African,Black
+380,27,Woman,"African, European",Black
+381,32,Man,African,Black
+382,33,Man,Hispanic or Latinx,"European/White, Hispanic"
+383,58,Woman,European,European/White
+384,27,Woman,Other,European/White
+385,24,Man,European,European/White
+386,35,Man,South Asian,Asian
+387,28,Woman,East Asian,Asian
+389,29,Man,East Asian,Asian
+392,38,Woman,Hispanic or Latinx,"European/White, Hispanic"
+393,36,Man,European,European/White
+396,42,Woman,"European, East Asian","Asian, European/White"
+403,53,Woman,European,European/White
+404,52,Woman,Hispanic or Latinx,Hispanic
+405,39,Man,European,European/White
+407,47,Woman,European,European/White
+408,25,Woman,Hispanic or Latinx,Hispanic
+409,43,Woman,African,Black
+411,28,Man,European,European/White
+415,35,Woman,European,European/White
+416,46,Woman,European,European/White
+422,25,Man,European,European/White
+423,32,Man,European,European/White
+424,28,Man,African,Black
+432,63,Man,European,European/White
+433,36,Woman,European,European/White
+434,29,Woman,European,European/White
+435,28,Woman,European,European/White
+436,25,Woman,European,European/White
+439,51,Woman,European,European/White
+440,35,Man,Prefer not to answer,Prefer not to answer
+441,39,Man,European,European/White
+442,27,Woman,East Asian,Asian
+444,31,Woman,European,European/White
+445,38,Man,European,European/White
+446,37,Woman,European,European/White
+448,30,Man,Middle Eastern,Other
+450,31,Woman,European,European/White
+451,29,Woman,European,European/White
+452,44,Woman,Prefer not to answer,Black
+454,31,Woman,"European, Hispanic or Latinx","European/White, Hispanic"
+455,41,Woman,European,European/White
+458,55,Man,European,European/White
+460,25,Man,"European, Hispanic or Latinx","European/White, Hispanic"
+461,30,Woman,Other,Black
+462,22,Woman,East Asian,Asian
+463,38,Woman,European,European/White
+464,55,Man,European,European/White
+474,24,Woman,European,European/White
+475,40,Man,Hispanic or Latinx,Hispanic
+479,60,Woman,European,European/White
+482,37,Woman,South Asian,Asian
+483,36,Woman,Don't know,Black
+485,29,Woman,African,Black
+490,28,Woman,European,European/White
+491,36,Man,African,"Black, European/White"
+492,21,Woman,African,Black
+493,31,Woman,European,European/White
+497,33,Woman,African,Black
+502,46,Woman,European,European/White
+503,43,Man,European,European/White
+504,54,Woman,East Asian,Asian
+506,34,Woman,European,European/White
+509,47,Woman,European,European/White
+511,33,Woman,European,European/White
+513,65,Man,European,European/White
+515,25,Man,African,Black
+521,29,Man,European,European/White
+522,26,Woman,African,Black
+524,42,Woman,European,European/White
+527,46,Woman,East Asian,Asian
+528,45,Woman,European,European/White
+529,26,Man,European,European/White
+530,29,Woman,European,European/White
+532,23,Woman,Hispanic or Latinx,Hispanic
+533,52,Woman,"Hispanic or Latinx, Indigenous, Other","Hispanic, Indigenous, Other"
+535,48,Woman,European,European/White
+539,46,Man,African,Black
+540,55,Man,European,European/White
+541,24,Man,European,European/White
+546,25,Woman,African,Black
+549,61,Man,"African, Indigenous","Black, Indigenous"
+552,35,Woman,European,European/White
+558,55,Man,European,European/White
+560,39,Man,East Asian,Asian
+567,27,Woman,European,European/White
+568,61,Woman,European,European/White
+569,48,Woman,European,European/White
+570,24,Woman,European,European/White
+573,33,Man,European,European/White
+576,28,Man,Hispanic or Latinx,Hispanic
+577,45,Woman,European,European/White
+580,50,Woman,European,European/White
+581,50,Woman,European,European/White
+584,31,Man,African,Black
+587,23,Woman,South East Asian,Asian
+589,41,Man,African,Black
+590,56,Man,European,European/White
+591,57,Woman,European,European/White
+592,53,Woman,East Asian,Asian
+593,34,Man,"Indigenous, Other",Indigenous
+595,28,Woman,"African, Middle Eastern",Black
+596,52,Man,East Asian,Asian
+597,30,Man,Hispanic or Latinx,Hispanic
+600,31,Man,European,European/White
+602,26,Woman,European,European/White
+603,48,Man,Other,Other
+604,32,Woman,European,European/White
+608,50,Man,European,European/White
+609,21,Man,African,Black
+610,25,Man,European,European/White
+612,71,Man,European,"European/White, Hispanic"
+619,34,Woman,European,European/White
+620,50,Woman,European,European/White
+623,26,Woman,South East Asian,Asian
+627,61,Man,European,European/White
+629,62,Man,East Asian,Asian
+630,27,Man,Prefer not to answer,European/White
+633,39,Man,European,European/White
+637,29,Man,European,European/White
+638,34,Man,European,European/White
+639,48,Man,European,European/White
+640,38,Non-binary,European,European/White
+641,24,Man,Don't know,European/White
+645,44,Woman,Other,European/White
+646,73,Man,European,European/White
+647,34,Man,African,Black
+649,33,Woman,African,Black
+650,59,Man,European,European/White
+651,23,Woman,"African, European",Black
+653,28,Man,European,"Asian, European/White"
+654,47,Man,European,European/White
+656,23,Man,"African, European","Black, European/White"
+657,76,Woman,European,European/White
+659,59,Woman,European,European/White
+660,65,Woman,Don't know,European/White
+661,27,Non-binary,African,Black
+664,58,Woman,European,European/White
+665,21,Man,South East Asian,Asian
+666,26,Man,European,European/White
+667,50,Woman,European,European/White
+668,39,Man,European,European/White
+669,60,Woman,European,European/White
+671,30,Man,African,Black
+673,64,Woman,European,European/White
+674,52,Woman,European,European/White
+676,22,Man,European,European/White
+681,43,Man,European,European/White
+682,27,Man,European,European/White
+685,38,Man,European,European/White
+686,29,Man,Hispanic or Latinx,Hispanic
+692,53,Woman,European,European/White
+693,37,Man,European,European/White
+699,38,Man,African,Black
+701,50,Woman,European,European/White
+702,37,Woman,East Asian,Asian
+703,43,Man,European,European/White
+704,28,Man,European,European/White
+706,57,Woman,European,European/White
+709,31,Man,European,European/White
+714,29,Woman,African,Black
+715,31,Man,Hispanic or Latinx,Hispanic
+719,52,Man,Other,European/White
+721,43,Woman,South East Asian,"Asian, Hispanic"
+725,57,Man,European,European/White
+729,29,Woman,South Asian,Asian
+731,23,Man,South Asian,Asian
+732,46,Man,European,European/White
+734,41,Man,European,European/White
+735,48,Woman,European,European/White
+737,30,Man,Prefer not to answer,European/White
+738,48,Woman,European,European/White
+739,31,Woman,"European, East Asian","Asian, European/White"
+740,39,Woman,European,European/White
+742,22,Woman,African,Black
+748,37,Woman,African,Black
+750,34,Man,African,Black
+751,33,Man,European,European/White
+756,24,Woman,South East Asian,Asian
+758,32,Man,European,European/White
+759,68,Man,European,European/White
+760,34,Man,East Asian,Asian
+761,69,Woman,European,Pacific Islander
+762,49,Woman,Other,European/White
+767,26,Man,European,European/White
+769,45,Woman,European,European/White
+774,32,Man,European,European/White
+775,21,Woman,Middle Eastern,Other
+776,73,Woman,European,European/White
+778,40,Woman,African,Black
+779,33,Woman,European,European/White
+785,21,Woman,African,Black
+786,49,Man,European,European/White
+787,46,Man,Other,Black
+789,42,Man,European,European/White
+790,35,Man,East Asian,Asian
+791,43,Man,"European, Middle Eastern",European/White
+794,41,Man,European,European/White
+796,29,Man,Other,Black
+798,38,Woman,European,European/White
+799,24,Woman,African,Black
+801,73,Woman,European,European/White
+804,21,Man,European,European/White
+806,23,Man,European,European/White
+807,31,Man,African,Black
+810,26,Woman,European,European/White
+811,51,Man,European,European/White
+812,20,Woman,African,Black
+816,21,Woman,Hispanic or Latinx,Hispanic
+817,37,Woman,European,European/White
+818,29,Woman,European,European/White
+819,35,Woman,African,Black
+824,47,Man,European,European/White
+825,38,Woman,"European, Don't know",European/White
+826,30,Man,South East Asian,Asian
+832,27,Man,European,European/White
+834,34,Non-binary,European,European/White
+835,23,Man,European,European/White
+837,53,Woman,European,European/White
+839,26,Man,European,European/White
+840,25,Woman,European,European/White
+841,51,Woman,East Asian,Asian
+843,28,Man,South Asian,Asian
+844,62,Man,European,European/White
+847,32,Woman,European,European/White
+849,38,Man,African,Black
+850,25,Man,South Asian,Asian
+853,54,Man,African,Black
+855,43,Man,European,European/White
+860,27,Man,European,European/White
+862,77,Man,Hispanic or Latinx,Hispanic
+868,58,Woman,East Asian,Asian
+869,38,Man,European,European/White
+873,42,Man,European,European/White
+874,44,Woman,European,European/White
+876,31,Man,European,European/White

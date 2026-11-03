@@ -1,0 +1,472 @@
+---
+title: "InteroMap — Study 2 Report"
+subtitle: "Pre-registered hypotheses: linear mixed models and Study-1-informed Bayesian models"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+    css: apa_style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(brms)
+library(cmdstanr)
+library(posterior)
+library(lme4)
+library(lmerTest)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(readr)
+
+# Project root: edit to your own directory
+base_dir <- dirname(dirname(normalizePath(knitr::current_input())))
+SEED <- 8473
+
+source(file.path(base_dir, "code", "apa_helpers.R"))
+
+tab_dir <- file.path(base_dir, "code", "apa_output", "tables", "study2")
+fig_dir <- file.path(base_dir, "code", "apa_output", "figures", "study2")
+```
+
+# Load data and prepare variables
+
+```{r load-prepare}
+df <- read_csv(file.path(base_dir, "data", "processed", "interomap_study2_data.csv"),
+               show_col_types = FALSE)
+
+# Private demographics (one row per PID), used only for the Demographics table.
+demo_path <- file.path(base_dir, "data", "processed", "interomap_study2_demographics.csv")
+have_demographics <- file.exists(demo_path)
+
+if (have_demographics) {
+  df <- df |>
+    left_join(read_csv(demo_path, show_col_types = FALSE), by = "PID")
+} else {
+  df <- df |>
+    mutate(Age = NA_real_,
+           Gender = NA_character_,
+           `Cultural background` = NA_character_,
+           `Racial lineage` = NA_character_)
+}
+
+# Study 1 fits provide the informed priors (produced by interomap_fit_models.R).
+study1_fits <- readRDS(file.path(base_dir, "code", "study1_fits.rds"))
+
+gender_levels <- c("Non-binary", "Woman", "Man", "Self-described/Other",
+                   "Don't know", "No answer")
+
+df <- df |>
+  mutate(
+    # Ensure Gender has every level in the scheme (code 3 is otherwise NA).
+    Gender = factor(replace_na(as.character(Gender), "Self-described/Other"),
+                    levels = gender_levels),
+    # The four pre-registered outcomes (z-scored within study).
+    avg_valence_z       = as.numeric(scale(avg_valence_combined)),
+    centroid_y_front_z  = as.numeric(scale(centroid_y_front)),
+    sd_x_front_z        = as.numeric(scale(sd_x_front)),
+    entropy_15_front_z  = as.numeric(scale(entropy_15_front)),
+    timepoint = factor(timepoint, levels = c("pre", "post")),
+    group     = factor(group, levels = c("non_gambler", "gambler")),
+    PID       = factor(PID)
+  )
+
+# Raw columns for descriptives and distributions.
+pre_reg_raw <- c(
+  "Valence"      = "avg_valence_combined",
+  "Centroid y"   = "centroid_y_front",
+  "SD x"         = "sd_x_front",
+  "Entropy (15)" = "entropy_15_front"
+)
+
+# Z-scored outcome columns used in the models.
+study2_specs <- c(
+  "Valence"      = "avg_valence_z",
+  "Centroid y"   = "centroid_y_front_z",
+  "SD x"         = "sd_x_front_z",
+  "Entropy (15)" = "entropy_15_front_z"
+)
+
+# ---- Frequentist LME helpers ----
+
+fit_lme <- function(dv, data) {
+  lmer(as.formula(paste(dv, "~ timepoint * group + (1 | PID)")),
+       data = data, REML = TRUE)
+}
+
+# Satterthwaite-df fixed effects, formatted for an APA table (Wald 95% CI).
+lme_effects_table <- function(fit) {
+  s <- summary(fit)$coefficients
+  labels <- c("Intercept", "Timepoint (post)", "Group (gambler)",
+              "Timepoint x Group")
+  data.frame(
+    Parameter = labels,
+    b         = round(s[, "Estimate"],   2),
+    SE        = round(s[, "Std. Error"], 2),
+    df        = round(s[, "df"],         1),
+    t         = round(s[, "t value"],    2),
+    p         = fmt_p(s[, "Pr(>|t|)"]),
+    `95% CI`  = sprintf("[%.2f, %.2f]",
+                        s[, "Estimate"] - 1.96 * s[, "Std. Error"],
+                        s[, "Estimate"] + 1.96 * s[, "Std. Error"]),
+    check.names = FALSE
+  )
+}
+
+# ---- Bayesian helpers ----
+
+fit_model <- function(dv, data, prior) {
+  brm(
+    formula = as.formula(paste(dv, "~ timepoint * group + (1 | PID)")),
+    data    = data,
+    prior   = prior,
+    family  = gaussian(),
+    iter    = 4000, warmup = 2000, chains = 4, cores = 4,
+    seed    = SEED,
+    backend = "cmdstanr",
+    control = list(adapt_delta = 0.9),
+    save_pars    = save_pars(all = TRUE),
+    sample_prior = TRUE
+  )
+}
+
+# Study 2 priors = normal(Study 1 posterior mean, Study 1 posterior SE),
+# following Verhagen & Wagenmakers (2014).
+build_informed_prior <- function(fit) {
+  fx <- posterior_summary(
+    fit,
+    variable = c("b_Intercept", "b_timepointpost", "b_groupgambler",
+                 "b_timepointpost:groupgambler")
+  )
+  sd_pid <- posterior_summary(fit, variable = "sd_PID__Intercept")
+
+  c(
+    set_prior(sprintf("normal(%s, %s)",
+                      fx["b_Intercept", "Estimate"],
+                      fx["b_Intercept", "Est.Error"]),
+              class = "Intercept"),
+    set_prior(sprintf("normal(%s, %s)",
+                      fx["b_timepointpost", "Estimate"],
+                      fx["b_timepointpost", "Est.Error"]),
+              class = "b", coef = "timepointpost"),
+    set_prior(sprintf("normal(%s, %s)",
+                      fx["b_groupgambler", "Estimate"],
+                      fx["b_groupgambler", "Est.Error"]),
+              class = "b", coef = "groupgambler"),
+    set_prior(sprintf("normal(%s, %s)",
+                      fx["b_timepointpost:groupgambler", "Estimate"],
+                      fx["b_timepointpost:groupgambler", "Est.Error"]),
+              class = "b", coef = "timepointpost:groupgambler"),
+    set_prior(sprintf("normal(%s, %s)",
+                      sd_pid["sd_PID__Intercept", "Estimate"],
+                      sd_pid["sd_PID__Intercept", "Est.Error"]),
+              class = "sd")
+  )
+}
+
+# Posterior summary of the four fixed effects,
+bayes_effects_table <- function(fit, include_bf = FALSE) {
+  params <- c("Intercept", "timepointpost", "groupgambler",
+              "timepointpost:groupgambler")
+  labels <- c("Intercept", "Timepoint (post)", "Group (gambler)",
+              "Timepoint x Group")
+
+  s <- posterior_summary(fit, variable = paste0("b_", params))
+  out <- data.frame(
+    Parameter = labels,
+    b         = round(s[, "Estimate"],  2),
+    SE        = round(s[, "Est.Error"], 2),
+    `95% CrI` = sprintf("[%.2f, %.2f]", s[, "Q2.5"], s[, "Q97.5"]),
+    check.names = FALSE
+  )
+
+  if (include_bf) {
+    slope_params <- params[-1]
+    h <- hypothesis(fit, paste0(slope_params, " = 0"))$hypothesis
+    out$BF01 <- c("\u2014", sprintf("%.3g", h$Evid.Ratio))
+    out$BF10 <- c("\u2014", sprintf("%.3g", 1 / h$Evid.Ratio))
+  }
+  out
+}
+
+means_plot <- function(data, dv, label) {
+  data |>
+    group_by(timepoint, group) |>
+    summarise(mean = mean(.data[[dv]], na.rm = TRUE),
+              se   = sd(.data[[dv]], na.rm = TRUE) / sqrt(n()),
+              .groups = "drop") |>
+    ggplot(aes(x = timepoint, y = mean, colour = group, group = group)) +
+    geom_line() +
+    geom_point() +
+    geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.1) +
+    labs(x = "Timepoint", y = paste0(label, " (z)"), colour = "Group") +
+    theme_minimal()
+}
+
+distribution_plot <- function(data, specs) {
+  data |>
+    select(all_of(unname(specs))) |>
+    pivot_longer(everything(), names_to = "metric", values_to = "value") |>
+    filter(!is.na(value)) |>
+    mutate(metric = factor(metric, levels = unname(specs), labels = names(specs))) |>
+    ggplot(aes(x = value)) +
+    geom_histogram(bins = 30, fill = "#4A90A4", colour = "white", alpha = 0.85) +
+    facet_wrap(~ metric, scales = "free") +
+    labs(x = "Raw value", y = "Count") +
+    theme_minimal()
+}
+```
+
+# Demographics
+
+Age, gender, cultural background and racial lineage, split by gambling group.
+Education and employment are not reported.
+
+```{r demographics}
+if (have_demographics) {
+  demo <- df |>
+  filter(timepoint == "pre") |>
+  mutate(group = factor(group, levels = c("non_gambler", "gambler"),
+                        labels = c("Non-Gambler", "Gambler")))
+
+groups <- c("Non-Gambler", "Gambler")
+
+gender_labels   <- gender_levels
+cultural_labels <- c("African", "European", "East Asian", "South Asian",
+                     "South East Asian", "Hispanic or Latinx", "Indigenous",
+                     "Middle Eastern", "Other", "Don't know",
+                     "Prefer not to answer")
+racial_labels   <- c("Asian", "Black", "European/White", "Hispanic", "Indigenous",
+                     "Pacific Islander", "Other", "Don't know",
+                     "Prefer not to answer")
+
+# Percentages rounded (largest remainder) so they sum to exactly 100%.
+pct_sum100 <- function(counts) {
+  n <- sum(counts)
+  tenths <- floor(1000 * counts / n)
+  remainder <- as.integer(round(1000 - sum(tenths)))
+  frac <- 1000 * counts / n - tenths
+  idx <- order(frac, counts, decreasing = TRUE)[seq_len(remainder)]
+  tenths[idx] <- tenths[idx] + 1
+  tenths / 10
+}
+
+# Gender is single-select: count each level (zero counts shown).
+count_pct <- function(x, labels) {
+  vals <- trimws(unlist(strsplit(as.character(x), ",")))
+  vals <- vals[nzchar(vals)]
+  cnt  <- as.numeric(table(factor(vals, levels = labels)))
+  setNames(sprintf("%d (%.1f%%)", cnt, pct_sum100(cnt)), labels)
+}
+
+# Cultural background and racial lineage are multi-select. 
+combo_counts <- function(x, labels) {
+  parsed <- lapply(replace_na(as.character(x), ""), function(z) {
+    s <- trimws(strsplit(z, ",", fixed = TRUE)[[1]])
+    s <- s[nzchar(s) & s %in% labels]
+    if (length(s)) s[order(match(s, labels))] else character(0)
+  })
+  keys <- vapply(parsed, paste, character(1), collapse = ", ")
+  keys <- keys[lengths(parsed) > 0]
+  cnt  <- table(keys)
+  setNames(sprintf("%d (%.1f%%)", cnt, pct_sum100(cnt)), names(cnt))
+}
+
+combo_order <- function(keys, labels) {
+  parsed   <- strsplit(keys, ", ", fixed = TRUE)
+  ranks    <- lapply(parsed, function(s) match(s, labels))
+  size     <- lengths(ranks)
+  rank_str <- vapply(ranks, function(r) paste(sprintf("%02d", r), collapse = ""), character(1))
+  keys[order(size, rank_str)]
+}
+
+rows <- list()
+rows[["Age, mean (SD)"]] <- sapply(groups, function(g) {
+  x <- demo$Age[demo$group == g]
+  sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
+})
+for (lab in gender_labels) {
+  rows[[paste0("Gender \u2014 ", lab)]] <-
+    sapply(groups, function(g) count_pct(demo$Gender[demo$group == g], gender_labels)[[lab]])
+}
+
+add_multi_rows <- function(rows, var, labels) {
+  by_group <- lapply(groups, function(g) combo_counts(demo[[var]][demo$group == g], labels))
+  keys <- combo_order(unique(c(labels, unlist(lapply(by_group, names)))), labels)
+  for (k in keys) {
+    rows[[paste0(var, " \u2014 ", k)]] <-
+      sapply(by_group, function(v) if (k %in% names(v)) v[[k]] else "0 (0.0%)")
+  }
+  rows
+}
+rows <- add_multi_rows(rows, "Cultural background", cultural_labels)
+rows <- add_multi_rows(rows, "Racial lineage", racial_labels)
+
+demo_tab <- data.frame(Characteristic = names(rows),
+                       `Non-Gambler`  = sapply(rows, `[`, 1),
+                       Gambler        = sapply(rows, `[`, 2),
+                       check.names = FALSE, row.names = NULL)
+
+  cat(apa_tab_caption("Demographics by Group (Study 2)"), "\n")
+  apa_table(demo_tab, "study2_demographics", tab_dir)
+} else {
+  cat("Demographics are not included in the shared data file.\n")
+}
+```
+
+# Descriptives: pre-registered metrics
+
+Mean (SD) in raw units, by group and timepoint. Valence is the per-pixel average
+valence, on a 1–11 scale (6 = neutral).
+
+```{r descriptives-pre-reg}
+desc <- df |>
+  mutate(timepoint = factor(timepoint, levels = c("pre", "post"),
+                            labels = c("Pre", "Post")),
+         group     = factor(group, levels = c("non_gambler", "gambler"),
+                            labels = c("Non-Gambler", "Gambler"))) |>
+  pivot_longer(cols = all_of(unname(pre_reg_raw)),
+               names_to = "metric", values_to = "value") |>
+  mutate(metric = factor(metric, levels = unname(pre_reg_raw),
+                         labels = names(pre_reg_raw))) |>
+  group_by(metric, timepoint, group) |>
+  summarise(txt = sprintf("%.2f (%.2f)",
+                          mean(value, na.rm = TRUE), sd(value, na.rm = TRUE)),
+            .groups = "drop") |>
+  pivot_wider(names_from = group, values_from = txt) |>
+  arrange(metric, timepoint) |>
+  rename(Metric = metric, Timepoint = timepoint)
+
+cat(apa_tab_caption("Pre-registered Outcomes by Group and Timepoint (Study 2)"), "\n")
+apa_table(desc, "study2_descriptives", tab_dir)
+```
+
+# Distributions
+
+```{r dist-pre-reg, fig.width=12, fig.height=3.5}
+pdist <- distribution_plot(df, pre_reg_raw)
+apa_fig(pdist, "study2_dist", fig_dir, width = 12, height = 3.5)
+pdist
+```
+
+# Linear mixed-effects models (frequentist)
+
+Each of the four pre-registered outcomes is modelled with
+
+$$\text{outcome}_z \sim \text{timepoint} \times \text{group} + (1 \mid \text{PID})$$
+
+using `lmerTest::lmer` with Satterthwaite degrees of freedom.
+
+```{r fit-lme, results='hide'}
+study2_lme <- setNames(lapply(study2_specs, function(dv) fit_lme(dv, df)),
+                       study2_specs)
+```
+
+```{r report-lme, results='asis', echo=FALSE}
+for (nm in names(study2_specs)) {
+  dv <- study2_specs[[nm]]
+  cat("\n### ", nm, "\n\n", sep = "")
+  cat("**Model:** `", dv, " ~ timepoint * group + (1 | PID)`\n\n", sep = "")
+  cat(apa_tab_caption(paste0("Linear Mixed Model Fixed Effects \u2014 ", nm, " (Study 2)")), "\n")
+  print(apa_table(lme_effects_table(study2_lme[[dv]]),
+                  paste0("study2_lme_", dv), tab_dir))
+  cat("\n\n*Note.* b = unstandardised coefficient (outcome in SD units); Wald 95% CI; df = Satterthwaite degrees of freedom.\n\n")
+}
+```
+
+# Bayesian models (Study-1-informed priors)
+
+Each of the four pre-registered outcomes is modelled with
+
+$$\text{outcome}_z \sim \text{timepoint} \times \text{group} + (1 \mid \text{PID})$$
+
+using priors informed by the corresponding Study 1 posterior: each fixed effect
+gets a `normal(Study 1 mean, Study 1 SE)` prior, and the random-intercept SD
+keeps a normal prior (truncated at zero by brms). Two-sided Bayes factors for the
+slopes are computed with the Savage–Dickey density ratio (`BF01` = evidence for
+the null, `BF10` = evidence against it).
+
+```{r fit-informed, cache=TRUE, results='hide'}
+fits_path <- file.path(base_dir, "code", "study2_fits.rds")
+if (!file.exists(fits_path)) {
+  stop("study2_fits.rds not found; run interomap_fit_models.R first.")
+}
+study2_fits <- readRDS(fits_path)
+```
+
+```{r report-models, results='asis', echo=FALSE}
+for (nm in names(study2_specs)) {
+  dv <- study2_specs[[nm]]
+  cat("\n### ", nm, "\n\n", sep = "")
+  cat("**Model:** `", dv, " ~ timepoint * group + (1 | PID)`\n\n", sep = "")
+  cat(apa_tab_caption(paste0("Bayesian Posterior Summary and Bayes Factors \u2014 ", nm, " (Study 2)")), "\n")
+  print(apa_table(bayes_effects_table(study2_fits[[dv]], include_bf = TRUE),
+                  paste0("study2_bayes_", dv), tab_dir))
+  cat("\n\n*Note.* b = posterior mean; SE = posterior SD; 95% CrI = 95% credible interval; BF01 = evidence for the null; BF10 = evidence against the null.\n\n")
+  p <- means_plot(df, dv, nm)
+  cat("\n", apa_fig_embed(p, paste0("study2_means_", dv), fig_dir), "\n", sep = "")
+  cat(apa_fig_caption(paste0("Mean ", tolower(nm), " (z-scored) by timepoint and group \u2014 Study 2")), "\n\n")
+}
+```
+
+# Combined Bayes-factor summary
+
+```{r bf-summary}
+bf_rows <- lapply(names(study2_specs), function(nm) {
+  ft <- bayes_effects_table(study2_fits[[study2_specs[[nm]]]], include_bf = TRUE)
+  ft$model <- nm
+  ft[, c("model", "Parameter", "b", "SE", "95% CrI", "BF01", "BF10")]
+})
+bf_tab <- do.call(rbind, bf_rows)
+
+cat(apa_tab_caption("Savage\u2013Dickey Bayes Factors Across Models (Study 2)"), "\n")
+apa_table(bf_tab, "study2_bf_summary", tab_dir)
+```
+
+# Prior vs posterior (distribution change across studies)
+
+For each coefficient, the Study 1 posterior (which informed the Study 2 prior)
+is shown alongside the Study 2 posterior.
+
+```{r prior-posterior, results='asis', echo=FALSE, fig.width=9, fig.height=6}
+param_map <- c(
+  "b_Intercept"                  = "Intercept",
+  "b_timepointpost"              = "Timepoint (post)",
+  "b_groupgambler"               = "Group (gambler)",
+  "b_timepointpost:groupgambler" = "Timepoint x Group"
+)
+
+for (nm in names(study2_specs)) {
+  dv <- study2_specs[[nm]]
+
+  d1 <- as.data.frame(as_draws_df(study1_fits[[dv]]))[names(param_map)]
+  d2 <- as.data.frame(as_draws_df(study2_fits[[dv]]))[names(param_map)]
+  d1$study <- "Study 1 (prior)"
+  d2$study <- "Study 2 (posterior)"
+
+  pp <- bind_rows(d1, d2) |>
+    pivot_longer(all_of(names(param_map)), names_to = "param", values_to = "value") |>
+    mutate(
+      param = factor(param, levels = names(param_map), labels = unname(param_map)),
+      study = factor(study, levels = c("Study 1 (prior)", "Study 2 (posterior)"))
+    )
+
+  cat("\n### ", nm, "\n\n", sep = "")
+  ppfig <- ggplot(pp, aes(x = study, y = value, fill = study)) +
+    geom_violin(alpha = 0.55, trim = FALSE) +
+    geom_boxplot(width = 0.12, outlier.shape = NA, alpha = 0.4) +
+    geom_hline(yintercept = 0, linetype = 2, colour = "grey50") +
+    facet_wrap(~ param, scales = "free") +
+    labs(x = NULL, y = "Coefficient value") +
+    theme_minimal(base_size = 12) +
+    theme(legend.position = "none", strip.text = element_text(size = 9))
+
+  cat("\n", apa_fig_embed(ppfig, paste0("study2_priorpost_", dv), fig_dir, width = 9, height = 6), "\n", sep = "")
+  cat(apa_fig_caption(paste0("Study 1 posterior vs Study 2 posterior for each coefficient \u2014 ", nm)), "\n\n")
+}
+```

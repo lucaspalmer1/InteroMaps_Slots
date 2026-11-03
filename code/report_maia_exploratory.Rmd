@@ -1,0 +1,225 @@
+---
+title: "InteroMap — MAIA Subscale Exploratory Models"
+subtitle: "Each MAIA-2 subscale as a predictor in the outcome models"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+    css: apa_style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(lme4)
+library(lmerTest)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(readr)
+
+# Project root: edit to your own directory
+base_dir <- dirname(dirname(normalizePath(knitr::current_input())))
+
+source(file.path(base_dir, "code", "apa_helpers.R"))
+
+tab_dir <- file.path(base_dir, "code", "apa_output", "tables", "maia")
+fig_dir <- file.path(base_dir, "code", "apa_output", "figures", "maia")
+```
+
+# Purpose
+
+Exploratory check of whether trait interoceptive awareness (the eight MAIA-2
+subscales) is associated with the drawing outcomes. Each subscale is added as a
+predictor in a separate model, on top of the pre-registered structure:
+
+$$\text{outcome}_z \sim \text{timepoint} \times \text{group} + \text{MAIA\_subscale} + (1 \mid \text{PID})$$
+
+Outcomes are z-scored within study; MAIA subscales are z-scored within study, so
+the reported coefficient is the expected change in the outcome (in SD units) per
+1 SD of the subscale. MAIA-2 is trait-level and constant within a participant, so
+this is a between-person association.
+
+# Load and prepare
+
+```{r prepare}
+df1 <- read_csv(file.path(base_dir, "data", "processed", "interomap_study1_data.csv"), show_col_types = FALSE)
+df2 <- read_csv(file.path(base_dir, "data", "processed", "interomap_study2_data.csv"), show_col_types = FALSE)
+
+maia_subscales <- c(
+  "Noticing"              = "MAIA_Noticing",
+  "Not-Distracting"       = "MAIA_NotDistract",
+  "Not-Worrying"          = "MAIA_NotWorry",
+  "Attention Regulation"  = "MAIA_AttnReg",
+  "Emotional Awareness"   = "MAIA_EmoAware",
+  "Self-Regulation"       = "MAIA_SelfReg",
+  "Body Listening"        = "MAIA_BodyListen",
+  "Trusting"              = "MAIA_Trusting"
+)
+
+# Z-score outcomes and MAIA subscales within study.
+prepare <- function(df) {
+  df |>
+    mutate(
+      # z-scored outcomes
+      avg_valence_z             = as.numeric(scale(avg_valence_combined)),
+      avg_intensity_z           = as.numeric(scale(avg_intensity_combined)),
+      extent_log_z              = as.numeric(scale(log(extent_combined + 1))),
+      valence_by_extent_log_z   = as.numeric(scale(log(valence_by_extent_combined + 1))),
+      intensity_by_extent_log_z = as.numeric(scale(log(intensity_by_extent_combined + 1))),
+      centroid_x_front_z        = as.numeric(scale(centroid_x_front)),
+      centroid_y_front_z        = as.numeric(scale(centroid_y_front)),
+      sd_x_front_z              = as.numeric(scale(sd_x_front)),
+      sd_y_front_z              = as.numeric(scale(sd_y_front)),
+      entropy_15_front_z        = as.numeric(scale(entropy_15_front)),
+      # z-scored MAIA subscales
+      across(all_of(unname(maia_subscales)), ~ as.numeric(scale(.x))),
+      timepoint = factor(timepoint, levels = c("pre", "post")),
+      group     = factor(group, levels = c("non_gambler", "gambler")),
+      PID       = factor(PID)
+    )
+}
+
+df1 <- prepare(df1)
+df2 <- prepare(df2)
+
+study1_outcomes <- c(
+  "Valence"                    = "avg_valence_z",
+  "Intensity"                  = "avg_intensity_z",
+  "Extent (log)"               = "extent_log_z",
+  "Valence x Extent (log)"     = "valence_by_extent_log_z",
+  "Intensity x Extent (log)"   = "intensity_by_extent_log_z",
+  "Centroid x"                 = "centroid_x_front_z",
+  "Centroid y"                 = "centroid_y_front_z",
+  "SD x"                       = "sd_x_front_z",
+  "SD y"                       = "sd_y_front_z",
+  "Entropy (15)"               = "entropy_15_front_z"
+)
+
+study2_outcomes <- c(
+  "Valence"      = "avg_valence_z",
+  "Centroid y"   = "centroid_y_front_z",
+  "SD x"         = "sd_x_front_z",
+  "Entropy (15)" = "entropy_15_front_z"
+)
+```
+
+# Fit models
+
+```{r fit-models}
+# lmer with Satterthwaite df; returns only the MAIA subscale coefficient.
+fit_maia <- function(df, outcome_col, sub_col) {
+  f <- as.formula(paste(outcome_col, "~ timepoint * group +", sub_col, "+ (1 | PID)"))
+  s <- summary(lmer(f, data = df, REML = TRUE))$coefficients
+  s[sub_col, , drop = FALSE]
+}
+
+run_study <- function(df, outcomes) {
+  lapply(names(outcomes), function(onm) {
+    dv <- outcomes[[onm]]
+    lapply(names(maia_subscales), function(snm) {
+      r <- fit_maia(df, dv, maia_subscales[[snm]])
+      data.frame(
+        outcome  = onm,
+        subscale = snm,
+        estimate = r[1, "Estimate"],
+        se       = r[1, "Std. Error"],
+        df       = r[1, "df"],
+        t        = r[1, "t value"],
+        p        = r[1, "Pr(>|t|)"],
+        stringsAsFactors = FALSE
+      )
+    }) |>
+      bind_rows()
+  }) |>
+    bind_rows()
+}
+
+res1 <- run_study(df1, study1_outcomes) |> mutate(study = "Study 1")
+res2 <- run_study(df2, study2_outcomes) |> mutate(study = "Study 2")
+
+results <- bind_rows(res1, res2) |>
+  mutate(
+    subscale = factor(subscale, levels = rev(names(maia_subscales))),
+    ci_lo = estimate - 1.96 * se,   # Wald 95% CI for the forest plot
+    ci_hi = estimate + 1.96 * se
+  )
+
+# APA-formatted table view (subscales in questionnaire order, Noticing first).
+maia_apa_table <- function(dat) {
+  dat |>
+    mutate(
+      subscale = factor(subscale, levels = rev(levels(subscale))),
+      b        = round(estimate, 2),
+      SE       = round(se, 2),
+      df       = round(df, 1),
+      t        = round(t, 2),
+      p        = fmt_p(p),
+      `95% CI` = sprintf("[%.2f, %.2f]", ci_lo, ci_hi)
+    ) |>
+    arrange(outcome, subscale) |>
+    select(Outcome = outcome, Subscale = subscale, b, SE, df, t, p, `95% CI`)
+}
+```
+
+# Results
+
+## Study 1
+
+```{r table-study1, results='asis'}
+s1_tab <- maia_apa_table(filter(results, study == "Study 1"))
+
+cat(apa_tab_caption("MAIA Subscale Fixed Effects \u2014 Study 1 (Outcome and Subscale z-Scored)"), "\n")
+apa_table(s1_tab, "maia_study1", tab_dir)
+cat("\n*Note.* b = standardised coefficient (outcome SD per 1 SD of subscale); Wald 95% CI; df = Satterthwaite degrees of freedom. Models also include timepoint, group and their interaction (not shown).\n")
+```
+
+```{r forest-study1, fig.width=12, fig.height=14}
+f1 <- results |>
+  filter(study == "Study 1") |>
+  ggplot(aes(x = estimate, y = subscale, xmin = ci_lo, xmax = ci_hi)) +
+  geom_vline(xintercept = 0, linetype = 2, colour = "grey60") +
+  geom_pointrange() +
+  facet_wrap(~ outcome, scales = "free_x") +
+  labs(x = "Standardised coefficient (outcome SD per MAIA SD)", y = NULL) +
+  theme_minimal()
+
+apa_fig(f1, "maia_forest_study1", fig_dir, width = 12, height = 14)
+f1
+cat("\n", apa_fig_caption("Standardised association of each MAIA-2 subscale with each outcome \u2014 Study 1"), "\n")
+```
+
+## Study 2
+
+```{r table-study2, results='asis'}
+s2_tab <- maia_apa_table(filter(results, study == "Study 2"))
+
+cat(apa_tab_caption("MAIA Subscale Fixed Effects \u2014 Study 2 (Outcome and Subscale z-Scored)"), "\n")
+apa_table(s2_tab, "maia_study2", tab_dir)
+cat("\n*Note.* b = standardised coefficient (outcome SD per 1 SD of subscale); Wald 95% CI; df = Satterthwaite degrees of freedom. Models also include timepoint, group and their interaction (not shown).\n")
+```
+
+```{r forest-study2, fig.width=12, fig.height=8}
+f2 <- results |>
+  filter(study == "Study 2") |>
+  ggplot(aes(x = estimate, y = subscale, xmin = ci_lo, xmax = ci_hi)) +
+  geom_vline(xintercept = 0, linetype = 2, colour = "grey60") +
+  geom_pointrange() +
+  facet_wrap(~ outcome, scales = "free_x") +
+  labs(x = "Standardised coefficient (outcome SD per MAIA SD)", y = NULL) +
+  theme_minimal()
+
+apa_fig(f2, "maia_forest_study2", fig_dir, width = 12, height = 8)
+f2
+cat("\n", apa_fig_caption("Standardised association of each MAIA-2 subscale with each outcome \u2014 Study 2"), "\n")
+```
+
+# Interpretation
+
+`b` is the MAIA subscale fixed effect from `lmerTest::lmer` (Satterthwaite
+degrees of freedom). The remaining terms (`timepoint`, `group`, their interaction)
+are in every model but are not reported here; see the Study 1 and Study 2 reports
+for those. These are exploratory models, not corrected for multiple comparisons.

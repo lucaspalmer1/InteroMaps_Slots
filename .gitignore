@@ -1,0 +1,12 @@
+.Rproj.user/
+.Rhistory
+.RData
+.Renviron
+.DS_Store
+
+# Fitted model objects are regenerable and too large for Git.
+*.rds
+
+# knitr cache and figure-support folders (HTML reports are self-contained).
+*_cache/
+*_files/

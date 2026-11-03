@@ -1,0 +1,5 @@
+"Parameter","b","SE","95% CrI"
+"Intercept",-0.11,0.1,"[-0.31, 0.08]"
+"Timepoint (post)",0,0.1,"[-0.20, 0.20]"
+"Group (gambler)",0.12,0.14,"[-0.15, 0.40]"
+"Timepoint x Group",0.16,0.15,"[-0.13, 0.45]"

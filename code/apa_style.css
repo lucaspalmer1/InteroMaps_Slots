@@ -1,0 +1,46 @@
+/* APA 7th-edition table styling for the InteroMap reports. */
+table {
+  border-collapse: collapse;
+  margin: 0.5em 0 1em 0;
+  width: auto;
+}
+caption {
+  caption-side: top;
+  text-align: left;
+  font-style: italic;
+  margin-bottom: 0.25em;
+  color: #000;
+}
+thead th {
+  border-top: 2px solid #000;
+  border-bottom: 1px solid #000;
+  padding: 4px 10px;
+  font-weight: normal;
+  text-align: center;
+  vertical-align: bottom;
+}
+tbody td {
+  padding: 4px 10px;
+  border-top: none;
+  border-bottom: none;
+  text-align: center;
+}
+tbody tr:last-child td {
+  border-bottom: 2px solid #000;
+}
+/* Figure captions in APA style */
+.apa-fig-caption {
+  font-style: italic;
+  margin-top: 0.35em;
+  margin-bottom: 1.5em;
+  color: #000;
+}
+.apa-fig-label {
+  font-weight: bold;
+  font-style: normal;
+}
+.apa-note {
+  font-size: 0.9em;
+  margin-top: 0.25em;
+  color: #000;
+}
