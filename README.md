@@ -12,13 +12,13 @@ Data, code, and materials for the InteroMaps slot-machine studies (Study 1 and S
 │   ├── report_study1.Rmd/.html     # Study 1 report (LME models)
 │   ├── report_study2.Rmd/.html     # Study 2 report (LME + Bayesian models)
 │   ├── report_maia_exploratory.Rmd/.html   # MAIA subscale control models
-│   ├── apa_helpers.R / apa_style.css       # shared formatting helpers
-│   ├── apa_output/                  # exported APA tables and figures
+│   ├── apa_helpers.R / apa_style.css       # formatting helpers shared across scripts
+│   ├── apa_output/                  # exported APA tables and figures for reports
 │   └── bodymaps/                    # generated body-map figure panels
 ├── data/
 │   ├── raw/        # de-identified raw data
 │   └── processed/  # cleaned/tidied data used in the models
-└── documentation/  # study documentation (to be added)
+└── documentation/  # study documentation and data dictionary (need to add...)
 ```
 
 ## Raw data
@@ -27,14 +27,8 @@ Data, code, and materials for the InteroMaps slot-machine studies (Study 1 and S
 per-participant pixel-map zips, stroke-level body-map summaries, and the
 aggregate density/valence map images used to build the body-map figure panels.
 
-Identifiers were removed before sharing:
-
-- Qualtrics `ResponseId` and `PROLIFIC_PID` were replaced by a sequential
-  participant `PID`.
-- Timestamps, completion/progress metadata, device metadata (browser/OS/
-  resolution), survey-flow IDs, and all free-text "other, please specify"
-  fields were dropped.
-- The pixel-map CSV filenames and stroke CSVs are keyed by the same `PID`.
+Identifiers were removed before sharing.
+The pixel-map CSV filenames and stroke CSVs are indexed by the same `PID`.
 
 ## Processed data
 
@@ -51,11 +45,10 @@ Identifiers were removed before sharing:
 1. Run `code/interomap_data_prep.R` to regenerate `data/processed/` from
    `data/raw/`.
 2. Run `code/interomap_fit_models.R` to fit the Bayesian models.
-3. Knit the report `.Rmd` files.
+3. Knit each of the report `.Rmd` files.
 
 ## Model fits
 
 The fitted model objects (`code/study1_fits.rds`, `code/study2_fits.rds`) are
-large and are not tracked in this repository (see `.gitignore`). Regenerate them
-with `code/interomap_fit_models.R`, or download them from the project's OSF
-component.
+large and are not uploaded/tracked in this repository. Regenerate them
+with `code/interomap_fit_models.R`.
