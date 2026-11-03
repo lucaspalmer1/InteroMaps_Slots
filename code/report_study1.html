@@ -2898,11 +2898,11 @@ within the whole study, so coefficients are comparable across metrics.
 Valence and intensity are the per-pixel <strong>average</strong> metrics
 (<code>avg_valence_combined</code>,
 <code>avg_intensity_combined</code>).</p>
-<pre class="r"><code>df &lt;- read_csv(file.path(base_dir, &quot;interomap_study1_data.csv&quot;),
+<pre class="r"><code>df &lt;- read_csv(file.path(base_dir, &quot;data&quot;, &quot;processed&quot;, &quot;interomap_study1_data.csv&quot;),
                show_col_types = FALSE)
 
 # Private demographics (one row per PID), used only for the Demographics table.
-demo_path &lt;- file.path(base_dir, &quot;interomap_study1_demographics.csv&quot;)
+demo_path &lt;- file.path(base_dir, &quot;data&quot;, &quot;processed&quot;, &quot;interomap_study1_demographics.csv&quot;)
 have_demographics &lt;- file.exists(demo_path)
 
 if (have_demographics) {
@@ -4667,6 +4667,578 @@ Wald 95% CI; df = Satterthwaite degrees of freedom.</p>
 Study 1</em></p>
 </div>
 </div>
+<div id="pre-registered-t-tests" class="section level1">
+<h1>Pre-registered t-tests</h1>
+<p>For completeness, the t-tests specified in the pre-registration are
+also reported: a paired t-test of pre vs post within each group, and an
+independent (Welch) t-test on change scores between groups. The linear
+mixed models above remain the primary analyses.</p>
+<pre class="r"><code>run_paired_ttest &lt;- function(data, dv, grp) {
+  d &lt;- data |&gt;
+    filter(group == grp) |&gt;
+    select(PID, timepoint, value = all_of(dv)) |&gt;
+    pivot_wider(names_from = timepoint, values_from = value) |&gt;
+    filter(!is.na(pre), !is.na(post))
+  tt &lt;- t.test(d$post, d$pre, paired = TRUE)
+  data.frame(
+    group = grp,
+    n = nrow(d),
+    mean_change = mean(d$post - d$pre),
+    t = unname(tt$statistic),
+    df = unname(tt$parameter),
+    p = tt$p.value,
+    ci_lo = tt$conf.int[1],
+    ci_hi = tt$conf.int[2]
+  )
+}
+
+run_between_ttest &lt;- function(data, dv) {
+  change &lt;- data |&gt;
+    select(PID, group, timepoint, value = all_of(dv)) |&gt;
+    pivot_wider(names_from = timepoint, values_from = value) |&gt;
+    filter(!is.na(pre), !is.na(post)) |&gt;
+    mutate(change = post - pre)
+  g  &lt;- change |&gt; filter(group == &quot;gambler&quot;)     |&gt; pull(change)
+  ng &lt;- change |&gt; filter(group == &quot;non_gambler&quot;) |&gt; pull(change)
+  tt &lt;- t.test(g, ng, var.equal = FALSE)
+  data.frame(
+    n_gambler = length(g),
+    n_non_gambler = length(ng),
+    mean_change_gambler = mean(g),
+    mean_change_non_gambler = mean(ng),
+    t = unname(tt$statistic),
+    df = unname(tt$parameter),
+    p = tt$p.value,
+    ci_lo = tt$conf.int[1],
+    ci_hi = tt$conf.int[2]
+  )
+}
+
+paired_rows &lt;- lapply(names(pre_reg_specs), function(nm) {
+  bind_rows(
+    run_paired_ttest(df, pre_reg_specs[[nm]], &quot;gambler&quot;),
+    run_paired_ttest(df, pre_reg_specs[[nm]], &quot;non_gambler&quot;)
+  ) |&gt; mutate(outcome = nm)
+}) |&gt; bind_rows()
+
+between_rows &lt;- lapply(names(pre_reg_specs), function(nm) {
+  run_between_ttest(df, pre_reg_specs[[nm]]) |&gt; mutate(outcome = nm)
+}) |&gt; bind_rows()
+
+paired_tab &lt;- paired_rows |&gt;
+  mutate(
+    group = factor(group, levels = c(&quot;non_gambler&quot;, &quot;gambler&quot;),
+                   labels = c(&quot;Non-Gambler&quot;, &quot;Gambler&quot;)),
+    t = round(t, 2),
+    df = round(df, 1),
+    p = fmt_p(p),
+    `Mean change` = round(mean_change, 2),
+    `95% CI` = sprintf(&quot;[%.2f, %.2f]&quot;, ci_lo, ci_hi)
+  ) |&gt;
+  select(Outcome = outcome, Group = group, n, `Mean change`, t, df, p, `95% CI`)
+
+between_tab &lt;- between_rows |&gt;
+  mutate(
+    t = round(t, 2),
+    df = round(df, 1),
+    p = fmt_p(p),
+    `Change, non-gambler` = round(mean_change_non_gambler, 2),
+    `Change, gambler` = round(mean_change_gambler, 2),
+    `95% CI` = sprintf(&quot;[%.2f, %.2f]&quot;, ci_lo, ci_hi)
+  ) |&gt;
+  select(Outcome = outcome, `n (non-gambler)` = n_non_gambler,
+         `n (gambler)` = n_gambler, `Change, non-gambler`,
+         `Change, gambler`, t, df, p, `95% CI`)
+
+cat(apa_tab_caption(&quot;Paired t-Tests (Pre vs Post) by Group \u2014 Study 1&quot;), &quot;\n&quot;)</code></pre>
+<p><strong>Table 9</strong></p>
+<p><em>Paired t-Tests (Pre vs Post) by Group — Study 1</em></p>
+<pre class="r"><code>apa_table(paired_tab, &quot;study1_ttest_paired&quot;, tab_dir)</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+Outcome
+</th>
+<th style="text-align:left;">
+Group
+</th>
+<th style="text-align:right;">
+n
+</th>
+<th style="text-align:right;">
+Mean change
+</th>
+<th style="text-align:right;">
+t
+</th>
+<th style="text-align:right;">
+df
+</th>
+<th style="text-align:left;">
+p
+</th>
+<th style="text-align:left;">
+95% CI
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Average Valence
+</td>
+<td style="text-align:left;">
+Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+1.31
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.193
+</td>
+<td style="text-align:left;">
+[-0.07, 0.36]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Average Valence
+</td>
+<td style="text-align:left;">
+Non-Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.16
+</td>
+<td style="text-align:right;">
+-1.55
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.124
+</td>
+<td style="text-align:left;">
+[-0.36, 0.04]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Average Intensity
+</td>
+<td style="text-align:left;">
+Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+0.15
+</td>
+<td style="text-align:right;">
+1.42
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.159
+</td>
+<td style="text-align:left;">
+[-0.06, 0.37]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Average Intensity
+</td>
+<td style="text-align:left;">
+Non-Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+<td style="text-align:right;">
+0.12
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.906
+</td>
+<td style="text-align:left;">
+[-0.18, 0.20]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Extent (log)
+</td>
+<td style="text-align:left;">
+Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.10
+</td>
+<td style="text-align:right;">
+-1.34
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.184
+</td>
+<td style="text-align:left;">
+[-0.24, 0.05]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Extent (log)
+</td>
+<td style="text-align:left;">
+Non-Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.07
+</td>
+<td style="text-align:right;">
+-1.04
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.303
+</td>
+<td style="text-align:left;">
+[-0.20, 0.06]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Valence x Extent (log)
+</td>
+<td style="text-align:left;">
+Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.09
+</td>
+<td style="text-align:right;">
+-1.44
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.153
+</td>
+<td style="text-align:left;">
+[-0.22, 0.04]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Valence x Extent (log)
+</td>
+<td style="text-align:left;">
+Non-Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.14
+</td>
+<td style="text-align:right;">
+-1.83
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.071
+</td>
+<td style="text-align:left;">
+[-0.28, 0.01]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Intensity x Extent (log)
+</td>
+<td style="text-align:left;">
+Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.10
+</td>
+<td style="text-align:right;">
+-1.57
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.120
+</td>
+<td style="text-align:left;">
+[-0.22, 0.03]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Intensity x Extent (log)
+</td>
+<td style="text-align:left;">
+Non-Gambler
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.10
+</td>
+<td style="text-align:right;">
+-1.38
+</td>
+<td style="text-align:right;">
+92
+</td>
+<td style="text-align:left;">
+.171
+</td>
+<td style="text-align:left;">
+[-0.23, 0.04]
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>cat(&quot;\n*Note.* Outcomes z-scored within study, so mean change is in SD units. Reported for completeness per the pre-registration; the linear mixed models are the primary analyses.\n\n&quot;)</code></pre>
+<p><em>Note.</em> Outcomes z-scored within study, so mean change is in
+SD units. Reported for completeness per the pre-registration; the linear
+mixed models are the primary analyses.</p>
+<pre class="r"><code>cat(apa_tab_caption(&quot;Independent t-Tests on Change Scores (Gambler minus Non-Gambler) \u2014 Study 1&quot;), &quot;\n&quot;)</code></pre>
+<p><strong>Table 10</strong></p>
+<p><em>Independent t-Tests on Change Scores (Gambler minus Non-Gambler)
+— Study 1</em></p>
+<pre class="r"><code>apa_table(between_tab, &quot;study1_ttest_between&quot;, tab_dir)</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+Outcome
+</th>
+<th style="text-align:right;">
+n (non-gambler)
+</th>
+<th style="text-align:right;">
+n (gambler)
+</th>
+<th style="text-align:right;">
+Change, non-gambler
+</th>
+<th style="text-align:right;">
+Change, gambler
+</th>
+<th style="text-align:right;">
+t
+</th>
+<th style="text-align:right;">
+df
+</th>
+<th style="text-align:left;">
+p
+</th>
+<th style="text-align:left;">
+95% CI
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Average Valence
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.16
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+2.02
+</td>
+<td style="text-align:right;">
+183.2
+</td>
+<td style="text-align:left;">
+.045
+</td>
+<td style="text-align:left;">
+[0.01, 0.60]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Average Intensity
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+<td style="text-align:right;">
+0.15
+</td>
+<td style="text-align:right;">
+1.00
+</td>
+<td style="text-align:right;">
+180.3
+</td>
+<td style="text-align:left;">
+.321
+</td>
+<td style="text-align:left;">
+[-0.14, 0.43]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Extent (log)
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.07
+</td>
+<td style="text-align:right;">
+-0.10
+</td>
+<td style="text-align:right;">
+-0.28
+</td>
+<td style="text-align:right;">
+182.9
+</td>
+<td style="text-align:left;">
+.781
+</td>
+<td style="text-align:left;">
+[-0.22, 0.17]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Valence x Extent (log)
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.14
+</td>
+<td style="text-align:right;">
+-0.09
+</td>
+<td style="text-align:right;">
+0.42
+</td>
+<td style="text-align:right;">
+181.0
+</td>
+<td style="text-align:left;">
+.674
+</td>
+<td style="text-align:left;">
+[-0.15, 0.24]
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Intensity x Extent (log)
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+93
+</td>
+<td style="text-align:right;">
+-0.10
+</td>
+<td style="text-align:right;">
+-0.10
+</td>
+<td style="text-align:right;">
+-0.03
+</td>
+<td style="text-align:right;">
+182.4
+</td>
+<td style="text-align:left;">
+.973
+</td>
+<td style="text-align:left;">
+[-0.19, 0.18]
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>cat(&quot;\n*Note.* Welch t-test on post - pre change scores (SD units). Reported for completeness per the pre-registration.\n&quot;)</code></pre>
+<p><em>Note.</em> Welch t-test on post - pre change scores (SD units).
+Reported for completeness per the pre-registration.</p>
+</div>
 <div id="exploratory-models" class="section level1">
 <h1>Exploratory models</h1>
 <p>The same model, applied to the exploratory front-view spatial
@@ -4675,7 +5247,7 @@ outcomes.</p>
 <h3>Centroid x</h3>
 <p><strong>Model:</strong>
 <code>centroid_x_front_z ~ timepoint * group + (1 | PID)</code></p>
-<p><strong>Table 9</strong></p>
+<p><strong>Table 11</strong></p>
 <em>Linear Mixed Model Fixed Effects — Centroid x (Study 1)</em>
 <table>
 <thead>
@@ -4809,7 +5381,7 @@ Wald 95% CI; df = Satterthwaite degrees of freedom.</p>
 <h3>Centroid y</h3>
 <p><strong>Model:</strong>
 <code>centroid_y_front_z ~ timepoint * group + (1 | PID)</code></p>
-<p><strong>Table 10</strong></p>
+<p><strong>Table 12</strong></p>
 <em>Linear Mixed Model Fixed Effects — Centroid y (Study 1)</em>
 <table>
 <thead>
@@ -4943,7 +5515,7 @@ Wald 95% CI; df = Satterthwaite degrees of freedom.</p>
 <h3>SD x</h3>
 <p><strong>Model:</strong>
 <code>sd_x_front_z ~ timepoint * group + (1 | PID)</code></p>
-<p><strong>Table 11</strong></p>
+<p><strong>Table 13</strong></p>
 <em>Linear Mixed Model Fixed Effects — SD x (Study 1)</em>
 <table>
 <thead>
@@ -5076,7 +5648,7 @@ Wald 95% CI; df = Satterthwaite degrees of freedom.</p>
 <h3>SD y</h3>
 <p><strong>Model:</strong>
 <code>sd_y_front_z ~ timepoint * group + (1 | PID)</code></p>
-<p><strong>Table 12</strong></p>
+<p><strong>Table 14</strong></p>
 <em>Linear Mixed Model Fixed Effects — SD y (Study 1)</em>
 <table>
 <thead>
@@ -5209,7 +5781,7 @@ Wald 95% CI; df = Satterthwaite degrees of freedom.</p>
 <h3>Entropy (15)</h3>
 <p><strong>Model:</strong>
 <code>entropy_15_front_z ~ timepoint * group + (1 | PID)</code></p>
-<p><strong>Table 13</strong></p>
+<p><strong>Table 15</strong></p>
 <em>Linear Mixed Model Fixed Effects — Entropy (15) (Study 1)</em>
 <table>
 <thead>
