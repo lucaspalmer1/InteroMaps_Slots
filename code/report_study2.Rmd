@@ -323,7 +323,7 @@ demo_tab <- data.frame(Characteristic = names(rows),
 # Descriptives: pre-registered metrics
 
 Mean (SD) in raw units, by group and timepoint. Valence is the per-pixel average
-valence, on a 1–11 scale (6 = neutral).
+valence, on a -5 to +5 scale (0 = midpoint).
 
 ```{r descriptives-pre-reg}
 desc <- df |>

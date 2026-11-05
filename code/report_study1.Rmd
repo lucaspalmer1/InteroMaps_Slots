@@ -69,8 +69,8 @@ df <- df |>
     avg_valence_z             = as.numeric(scale(avg_valence_combined)),
     avg_intensity_z           = as.numeric(scale(avg_intensity_combined)),
     extent_log_z              = as.numeric(scale(log(extent_combined + 1))),
-    valence_by_extent_log_z   = as.numeric(scale(log(valence_by_extent_combined + 1))),
-    intensity_by_extent_log_z = as.numeric(scale(log(intensity_by_extent_combined + 1))),
+    valence_by_extent_asinh_z   = as.numeric(scale(asinh(valence_by_extent_combined))),
+    intensity_by_extent_asinh_z = as.numeric(scale(asinh(intensity_by_extent_combined))),
     # Exploratory spatial outcomes (z-scored for modelling).
     centroid_x_front_z        = as.numeric(scale(centroid_x_front)),
     centroid_y_front_z        = as.numeric(scale(centroid_y_front)),
@@ -104,8 +104,8 @@ pre_reg_specs <- c(
   "Average Valence"           = "avg_valence_z",
   "Average Intensity"         = "avg_intensity_z",
   "Extent (log)"              = "extent_log_z",
-  "Valence x Extent (log)"    = "valence_by_extent_log_z",
-  "Intensity x Extent (log)"  = "intensity_by_extent_log_z"
+  "Valence x Extent (asinh)"    = "valence_by_extent_asinh_z",
+  "Intensity x Extent (asinh)"  = "intensity_by_extent_asinh_z"
 )
 
 exploratory_specs <- c(
@@ -173,106 +173,93 @@ distribution_plot <- function(data, specs) {
 }
 ```
 
-# Demographics
+# Demographics and descriptives
 
-Age, gender, cultural background and racial lineage, split by gambling group.
-Education and employment are not reported.
+Age, gender, and raw outcome descriptives, by gambling group and timepoint.
+Cultural background and racial lineage are reported in the supplemental.
 
-```{r demographics}
-if (have_demographics) {
-  demo <- df |>
-  filter(timepoint == "pre") |>
-  mutate(group = factor(group, levels = c("non_gambler", "gambler"),
-                        labels = c("Non-Gambler", "Gambler")))
-
+```{r demographics-descriptives, results='asis', echo=FALSE}
 groups <- c("Non-Gambler", "Gambler")
 
-gender_labels   <- gender_levels
-cultural_labels <- c("African", "European", "East Asian", "South Asian",
-                     "South East Asian", "Hispanic or Latinx", "Indigenous",
-                     "Middle Eastern", "Other", "Don't know",
-                     "Prefer not to answer")
-racial_labels   <- c("Asian", "Black", "European/White", "Hispanic", "Indigenous",
-                     "Pacific Islander", "Other", "Don't know",
-                     "Prefer not to answer")
+demo <- df |>
+  filter(timepoint == "pre") |>
+  mutate(group = factor(group, levels = c("non_gambler", "gambler"), labels = groups))
 
-# Percentages rounded (largest remainder) so they sum to exactly 100%.
-pct_sum100 <- function(counts) {
-  n <- sum(counts)
-  tenths <- floor(1000 * counts / n)
-  remainder <- as.integer(round(1000 - sum(tenths)))
-  frac <- 1000 * counts / n - tenths
-  idx <- order(frac, counts, decreasing = TRUE)[seq_len(remainder)]
-  tenths[idx] <- tenths[idx] + 1
-  tenths / 10
-}
+n_vals <- vapply(groups, function(g) sum(demo$group == g, na.rm = TRUE), integer(1))
 
-# Gender is single-select: count each level (zero counts shown).
-count_pct <- function(x, labels) {
-  vals <- trimws(unlist(strsplit(as.character(x), ",")))
-  vals <- vals[nzchar(vals)]
-  cnt  <- as.numeric(table(factor(vals, levels = labels)))
-  setNames(sprintf("%d (%.1f%%)", cnt, pct_sum100(cnt)), labels)
-}
+demo_rows <- list(
+  list(label = "n", cls = "plain", ng = as.character(n_vals[1]), g = as.character(n_vals[2]))
+)
 
-# Cultural background and racial lineage are multi-select. Each participant is
-# counted once per column: single selections are reported as themselves and
-# multiple selections as one row per unique combination, so percentages sum to
-# exactly 100%.
-combo_counts <- function(x, labels) {
-  parsed <- lapply(replace_na(as.character(x), ""), function(z) {
-    s <- trimws(strsplit(z, ",", fixed = TRUE)[[1]])
-    s <- s[nzchar(s) & s %in% labels]
-    if (length(s)) s[order(match(s, labels))] else character(0)
-  })
-  keys <- vapply(parsed, paste, character(1), collapse = ", ")
-  keys <- keys[lengths(parsed) > 0]
-  cnt  <- table(keys)
-  setNames(sprintf("%d (%.1f%%)", cnt, pct_sum100(cnt)), names(cnt))
-}
+if (have_demographics) {
+  age_vals <- vapply(groups, function(g) {
+    x <- demo$Age[demo$group == g]
+    sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
+  }, character(1))
+  demo_rows[[length(demo_rows) + 1L]] <-
+    list(label = "Age, M (SD)", cls = "plain", ng = age_vals[1], g = age_vals[2])
+  demo_rows[[length(demo_rows) + 1L]] <-
+    list(label = "Gender, n (%)", cls = "spanner")
 
-# Order rows: single selections first, then combinations.
-combo_order <- function(keys, labels) {
-  parsed   <- strsplit(keys, ", ", fixed = TRUE)
-  ranks    <- lapply(parsed, function(s) match(s, labels))
-  size     <- lengths(ranks)
-  rank_str <- vapply(ranks, function(r) paste(sprintf("%02d", r), collapse = ""), character(1))
-  keys[order(size, rank_str)]
-}
-
-rows <- list()
-rows[["n"]] <- sapply(groups, function(g) sum(demo$group == g, na.rm = TRUE))
-rows[["Age, mean (SD)"]] <- sapply(groups, function(g) {
-  x <- demo$Age[demo$group == g]
-  sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
-})
-for (lab in gender_labels) {
-  rows[[paste0("Gender \u2014 ", lab)]] <-
-    sapply(groups, function(g) count_pct(demo$Gender[demo$group == g], gender_labels)[[lab]])
-}
-
-add_multi_rows <- function(rows, var, labels) {
-  by_group <- lapply(groups, function(g) combo_counts(demo[[var]][demo$group == g], labels))
-  keys <- combo_order(unique(c(labels, unlist(lapply(by_group, names)))), labels)
-  for (k in keys) {
-    rows[[paste0(var, " \u2014 ", k)]] <-
-      sapply(by_group, function(v) if (k %in% names(v)) v[[k]] else "0 (0.0%)")
+  gender_order <- c("Woman", "Man", "Non-binary", "Self-described/Other",
+                    "Don't know", "No answer")
+  for (lab in gender_order) {
+    cnt <- vapply(groups, function(g) sum(demo$Gender[demo$group == g] == lab, na.rm = TRUE),
+                  integer(1))
+    if (sum(cnt) == 0) next
+    pct <- 100 * cnt / n_vals
+    demo_rows[[length(demo_rows) + 1L]] <- list(
+      label = lab, cls = "sub",
+      ng = sprintf("%d (%.1f%%)", cnt[1], pct[1]),
+      g  = sprintf("%d (%.1f%%)", cnt[2], pct[2]))
   }
-  rows
 }
-rows <- add_multi_rows(rows, "Cultural background", cultural_labels)
-rows <- add_multi_rows(rows, "Racial lineage", racial_labels)
 
-demo_tab <- data.frame(Characteristic = names(rows),
-                       `Non-Gambler`  = sapply(rows, `[`, 1),
-                       Gambler        = sapply(rows, `[`, 2),
-                       check.names = FALSE, row.names = NULL)
+all_raw <- c(pre_reg_raw, exploratory_raw)
+metric_desc <- df |>
+  mutate(timepoint = factor(timepoint, levels = c("pre", "post"), labels = c("Pre", "Post")),
+         group     = factor(group, levels = c("non_gambler", "gambler"), labels = groups)) |>
+  pivot_longer(cols = all_of(unname(all_raw)), names_to = "metric", values_to = "value") |>
+  mutate(metric = factor(metric, levels = unname(all_raw), labels = names(all_raw))) |>
+  group_by(metric, timepoint, group) |>
+  summarise(txt = sprintf("%.2f (%.2f)",
+                          mean(value, na.rm = TRUE), sd(value, na.rm = TRUE)),
+            .groups = "drop")
 
-  cat(apa_tab_caption("Demographics by Group (Study 1)"), "\n")
-  apa_table(demo_tab, "study1_demographics", tab_dir)
-} else {
-  cat("Demographics are not included in the shared data file.\n")
+cell <- function(metric_nm, tp, grp) {
+  v <- metric_desc |>
+    filter(as.character(metric) == metric_nm, as.character(timepoint) == tp,
+           as.character(group) == grp) |>
+    pull(txt)
+  if (length(v) == 0L) "" else v
 }
+
+all_rows <- demo_rows
+for (nm in names(all_raw)) {
+  all_rows[[length(all_rows) + 1L]] <- list(label = nm, cls = "spanner")
+  all_rows[[length(all_rows) + 1L]] <-
+    list(label = "Pre", cls = "sub", ng = cell(nm, "Pre", "Non-Gambler"), g = cell(nm, "Pre", "Gambler"))
+  all_rows[[length(all_rows) + 1L]] <-
+    list(label = "Post", cls = "sub", ng = cell(nm, "Post", "Non-Gambler"), g = cell(nm, "Post", "Gambler"))
+}
+
+row_html <- function(r) {
+  ng <- if (is.null(r$ng) || length(r$ng) == 0L) "" else r$ng
+  g  <- if (is.null(r$g)  || length(r$g)  == 0L) "" else r$g
+  stub <- "text-align:left;"
+  if (r$cls == "spanner") stub <- paste0(stub, "font-weight:bold;")
+  if (r$cls == "sub")     stub <- paste0(stub, "padding-left:2em;")
+  sprintf('<tr><td style="%s">%s</td><td style="text-align:center;">%s</td><td style="text-align:center;">%s</td></tr>',
+          stub, r$label, ng, g)
+}
+
+body <- paste0(vapply(all_rows, row_html, character(1)), collapse = "\n")
+
+cat(apa_tab_caption("Demographics and Outcome Descriptives by Group and Timepoint (Study 1)"), "\n")
+cat('<table>')
+cat('<thead><tr><th style="text-align:left;">Characteristic</th><th>Non-Gambler</th><th>Gambler</th></tr></thead>')
+cat('<tbody>', body, '</tbody></table>')
+cat("\n\n*Note.* Average Valence and Average Intensity are per-pixel means on a -5 to +5 scale (0 = midpoint). Valence \u00d7 Extent and Intensity \u00d7 Extent are raw summed products (heavily right-skewed; asinh-transformed for analysis). Cell *n*s are slightly below the group *n* where a participant drew nothing. Extent and the \u00d7-Extent metrics combine front and back views.\n\n")
 ```
 
 # Outcome measures
@@ -316,57 +303,6 @@ cat(apa_tab_caption("Outcome Metric Definitions (Study 1)"), "\n")
 apa_table(metric_defs, "study1_metric_definitions", tab_dir)
 ```
 
-# Descriptives: pre-registered metrics
-
-Mean (SD) in raw units, by group and timepoint. Average Valence and Average
-Intensity are per-pixel means on a 1–11 scale (6 = neutral).
-
-```{r descriptives-pre-reg}
-pre_reg_desc <- df |>
-  mutate(timepoint = factor(timepoint, levels = c("pre", "post"),
-                            labels = c("Pre", "Post")),
-         group     = factor(group, levels = c("non_gambler", "gambler"),
-                            labels = c("Non-Gambler", "Gambler"))) |>
-  pivot_longer(cols = all_of(unname(pre_reg_raw)),
-               names_to = "metric", values_to = "value") |>
-  mutate(metric = factor(metric, levels = unname(pre_reg_raw),
-                         labels = names(pre_reg_raw))) |>
-  group_by(metric, timepoint, group) |>
-  summarise(txt = sprintf("%.2f (%.2f)",
-                          mean(value, na.rm = TRUE), sd(value, na.rm = TRUE)),
-            .groups = "drop") |>
-  pivot_wider(names_from = group, values_from = txt) |>
-  arrange(metric, timepoint) |>
-  rename(Metric = metric, Timepoint = timepoint)
-
-cat(apa_tab_caption("Pre-registered Outcomes by Group and Timepoint (Study 1)"), "\n")
-apa_table(pre_reg_desc, "study1_descriptives_prereg", tab_dir)
-```
-
-# Descriptives: exploratory metrics
-
-```{r descriptives-exploratory}
-expl_desc <- df |>
-  mutate(timepoint = factor(timepoint, levels = c("pre", "post"),
-                            labels = c("Pre", "Post")),
-         group     = factor(group, levels = c("non_gambler", "gambler"),
-                            labels = c("Non-Gambler", "Gambler"))) |>
-  pivot_longer(cols = all_of(unname(exploratory_raw)),
-               names_to = "metric", values_to = "value") |>
-  mutate(metric = factor(metric, levels = unname(exploratory_raw),
-                         labels = names(exploratory_raw))) |>
-  group_by(metric, timepoint, group) |>
-  summarise(txt = sprintf("%.2f (%.2f)",
-                          mean(value, na.rm = TRUE), sd(value, na.rm = TRUE)),
-            .groups = "drop") |>
-  pivot_wider(names_from = group, values_from = txt) |>
-  arrange(metric, timepoint) |>
-  rename(Metric = metric, Timepoint = timepoint)
-
-cat(apa_tab_caption("Exploratory Outcomes by Group and Timepoint (Study 1)"), "\n")
-apa_table(expl_desc, "study1_descriptives_exploratory", tab_dir)
-```
-
 # Distributions
 
 ```{r dist-pre-reg, fig.width=12, fig.height=3.5}
@@ -387,8 +323,8 @@ Each pre-registered outcome is modelled with
 
 $$\text{outcome}_z \sim \text{timepoint} \times \text{group} + (1 \mid \text{PID})$$
 
-using `lmerTest::lmer` with Satterthwaite degrees of freedom. Extent and the two
-extent-products are log-transformed before standardising, to reduce skew.
+using `lmerTest::lmer` with Satterthwaite degrees of freedom. Extent is log-transformed and the two extent-products are asinh-transformed
+before standardising, to reduce skew.
 
 ```{r fit-lme, results='hide'}
 study1_lme <- setNames(lapply(all_specs, function(dv) fit_lme(dv, df)),
