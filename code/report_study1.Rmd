@@ -247,21 +247,24 @@ for (nm in names(all_raw)) {
     list(label = "Post", cls = "sub", ng = cell(nm, "Post", "Non-Gambler"), g = cell(nm, "Post", "Gambler"))
 }
 
-row_html <- function(r) {
+row_html <- function(r, is_last = FALSE) {
   ng <- if (is.null(r$ng) || length(r$ng) == 0L) "" else r$ng
   g  <- if (is.null(r$g)  || length(r$g)  == 0L) "" else r$g
   stub <- "text-align:left;"
   if (r$cls == "spanner") stub <- paste0(stub, "font-weight:bold;")
   if (r$cls == "sub")     stub <- paste0(stub, "padding-left:2em;")
-  sprintf('<tr><td style="%s">%s</td><td style="text-align:center;">%s</td><td style="text-align:center;">%s</td></tr>',
-          stub, r$label, ng, g)
+  bb <- if (is_last) "border-bottom:2px solid #000;" else ""
+  sprintf('<tr><td style="border:none;%s%s">%s</td><td style="border:none;text-align:center;%s">%s</td><td style="border:none;text-align:center;%s">%s</td></tr>',
+          stub, bb, r$label, bb, ng, bb, g)
 }
 
-body <- paste0(vapply(all_rows, row_html, character(1)), collapse = "\n")
+n_rows <- length(all_rows)
+body <- paste0(vapply(seq_len(n_rows), function(i) row_html(all_rows[[i]], i == n_rows),
+                      character(1)), collapse = "\n")
 
 cat(apa_tab_caption("Demographics and Outcome Descriptives by Group and Timepoint (Study 1)"), "\n")
-cat('<table>')
-cat('<thead><tr><th style="text-align:left;">Characteristic</th><th>Non-Gambler</th><th>Gambler</th></tr></thead>')
+cat('<table style="border-collapse:collapse;">')
+cat('<thead><tr><th style="border:none;border-top:2px solid #000;border-bottom:1px solid #000;text-align:left;">Characteristic</th><th style="border:none;border-top:2px solid #000;border-bottom:1px solid #000;text-align:center;">Non-Gambler</th><th style="border:none;border-top:2px solid #000;border-bottom:1px solid #000;text-align:center;">Gambler</th></tr></thead>')
 cat('<tbody>', body, '</tbody></table>')
 cat("\n\n*Note.* Average Valence and Average Intensity are per-pixel means on a -5 to +5 scale (0 = midpoint). Valence \u00d7 Extent and Intensity \u00d7 Extent are raw summed products (heavily right-skewed; log-transformed for analysis). Cell *n*s are slightly below the group *n* where a participant drew nothing. Extent and the \u00d7-Extent metrics combine front and back views.\n\n")
 ```

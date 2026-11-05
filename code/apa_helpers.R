@@ -30,6 +30,25 @@ fmt_p <- function(p) {
 # Table export (APA-styled .xlsx + .csv) and inline kable
 # ---------------------------------------------------------------------------
 
+# Inject APA borders inline (top rule, header underline, bottom rule, no vertical
+# rules) so the table survives copy-paste into Word, which drops external CSS but
+# keeps inline styles.
+apa_border_html <- function(k) {
+  parts <- strsplit(as.character(k), "</tr>", fixed = TRUE)[[1]]
+  n <- length(parts)
+  parts[1] <- gsub('<th style="',
+                   '<th style="border:none;border-top:2px solid #000;border-bottom:1px solid #000;',
+                   parts[1], fixed = TRUE)
+  interior <- if (n >= 4) 2:(n - 2) else integer(0)
+  for (i in interior) {
+    parts[i] <- gsub('<td style="', '<td style="border:none;', parts[i], fixed = TRUE)
+  }
+  parts[n - 1] <- gsub('<td style="',
+                       '<td style="border:none;border-bottom:2px solid #000;',
+                       parts[n - 1], fixed = TRUE)
+  paste(parts, collapse = "</tr>")
+}
+
 apa_table <- function(df, name, dir, digits = NULL) {
   dir.create(dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -50,11 +69,12 @@ apa_table <- function(df, name, dir, digits = NULL) {
   }
   saveWorkbook(wb, file.path(dir, paste0(name, ".xlsx")), overwrite = TRUE)
 
-  if (is.null(digits)) {
+  k <- if (is.null(digits)) {
     kable(df, format = "html", row.names = FALSE)
   } else {
     kable(df, digits = digits, format = "html", row.names = FALSE)
   }
+  apa_border_html(k)
 }
 
 # ---------------------------------------------------------------------------
