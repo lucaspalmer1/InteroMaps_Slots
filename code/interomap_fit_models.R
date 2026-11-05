@@ -31,7 +31,7 @@ find_root <- function(d) {
 }
 script_file <- sub("^--file=", "", grep("^--file=", commandArgs(trailingOnly = FALSE),
                                        value = TRUE)[1])
-editor_file <- if (requireNamespace("rstudioapi", quietly = TRUE)) {
+editor_file <- if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
   p <- rstudioapi::getSourceEditorContext()$path
   if (is.null(p)) "" else p
 } else ""

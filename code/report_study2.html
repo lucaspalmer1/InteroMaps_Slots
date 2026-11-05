@@ -2892,11 +2892,11 @@ Study-1-informed Bayesian models</h3>
 
 <div id="load-data-and-prepare-variables" class="section level1">
 <h1>Load data and prepare variables</h1>
-<pre class="r"><code>df &lt;- read_csv(file.path(base_dir, &quot;interomap_study2_data.csv&quot;),
+<pre class="r"><code>df &lt;- read_csv(file.path(base_dir, &quot;data&quot;, &quot;processed&quot;, &quot;interomap_study2_data.csv&quot;),
                show_col_types = FALSE)
 
 # Private demographics (one row per PID), used only for the Demographics table.
-demo_path &lt;- file.path(base_dir, &quot;interomap_study2_demographics.csv&quot;)
+demo_path &lt;- file.path(base_dir, &quot;data&quot;, &quot;processed&quot;, &quot;interomap_study2_demographics.csv&quot;)
 have_demographics &lt;- file.exists(demo_path)
 
 if (have_demographics) {
@@ -2911,7 +2911,7 @@ if (have_demographics) {
 }
 
 # Study 1 fits provide the informed priors (produced by interomap_fit_models.R).
-study1_fits &lt;- readRDS(file.path(base_dir, &quot;analysis&quot;, &quot;study1_fits.rds&quot;))
+study1_fits &lt;- readRDS(file.path(base_dir, &quot;code&quot;, &quot;study1_fits.rds&quot;))
 
 gender_levels &lt;- c(&quot;Non-binary&quot;, &quot;Woman&quot;, &quot;Man&quot;, &quot;Self-described/Other&quot;,
                    &quot;Don&#39;t know&quot;, &quot;No answer&quot;)
@@ -3138,6 +3138,7 @@ combo_order &lt;- function(keys, labels) {
 }
 
 rows &lt;- list()
+rows[[&quot;n&quot;]] &lt;- sapply(groups, function(g) sum(demo$group == g, na.rm = TRUE))
 rows[[&quot;Age, mean (SD)&quot;]] &lt;- sapply(groups, function(g) {
   x &lt;- demo$Age[demo$group == g]
   sprintf(&quot;%.1f (%.1f)&quot;, mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
@@ -3187,6 +3188,17 @@ Gambler
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+n
+</td>
+<td style="text-align:left;">
+215
+</td>
+<td style="text-align:left;">
+211
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Age, mean (SD)
@@ -4414,7 +4426,7 @@ and the random-intercept SD keeps a normal prior (truncated at zero by
 brms). Two-sided Bayes factors for the slopes are computed with the
 Savage–Dickey density ratio (<code>BF01</code> = evidence for the null,
 <code>BF10</code> = evidence against it).</p>
-<pre class="r"><code>fits_path &lt;- file.path(base_dir, &quot;analysis&quot;, &quot;study2_fits.rds&quot;)
+<pre class="r"><code>fits_path &lt;- file.path(base_dir, &quot;code&quot;, &quot;study2_fits.rds&quot;)
 if (!file.exists(fits_path)) {
   stop(&quot;study2_fits.rds not found; run interomap_fit_models.R first.&quot;)
 }
