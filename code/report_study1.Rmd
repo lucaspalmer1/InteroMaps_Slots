@@ -241,6 +241,7 @@ combo_order <- function(keys, labels) {
 }
 
 rows <- list()
+rows[["n"]] <- sapply(groups, function(g) sum(demo$group == g, na.rm = TRUE))
 rows[["Age, mean (SD)"]] <- sapply(groups, function(g) {
   x <- demo$Age[demo$group == g]
   sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
@@ -272,6 +273,47 @@ demo_tab <- data.frame(Characteristic = names(rows),
 } else {
   cat("Demographics are not included in the shared data file.\n")
 }
+```
+
+# Outcome measures
+
+Definitions of the pre-registered and exploratory outcome metrics.
+
+```{r metric-definitions, results='asis'}
+metric_defs <- data.frame(
+  Metric = c(
+    "Pre-registered metrics",
+    "Average Intensity",
+    "Average Valence",
+    "Extent",
+    "Intensity by extent",
+    "Valence by extent",
+    "Exploratory metrics",
+    "Centroid x",
+    "Centroid y",
+    "SD x",
+    "SD y",
+    "Entropy (15-grid)"
+  ),
+  Definition = c(
+    "",
+    "(Σ intensity of drawn pixels) / (number of pixels drawn)",
+    "(Σ valence of drawn pixels) / (number of pixels drawn)",
+    "number of pixels drawn / total number of pixels",
+    "(Σ intensity of drawn pixels) × (number of pixels drawn / total number of pixels)",
+    "(Σ valence of drawn pixels) × (number of pixels drawn / total number of pixels)",
+    "",
+    "Mean x-coordinate of drawn pixels: Σxᵢ / n",
+    "Mean y-coordinate of drawn pixels: Σyᵢ / n",
+    "Standard deviation of pixel x-coordinates: √[Σ(xᵢ − Centroid x)² / (n − 1)]",
+    "Standard deviation of pixel y-coordinates: √[Σ(yᵢ − Centroid y)² / (n − 1)]",
+    "Shannon entropy of the spatial distribution of drawn pixels: front-view image divided into a 15 × 15 grid; pᵢ = proportion of drawn pixels in cell i; entropy = −Σ pᵢ · log(pᵢ)"
+  ),
+  check.names = FALSE
+)
+
+cat(apa_tab_caption("Outcome Metric Definitions (Study 1)"), "\n")
+apa_table(metric_defs, "study1_metric_definitions", tab_dir)
 ```
 
 # Descriptives: pre-registered metrics

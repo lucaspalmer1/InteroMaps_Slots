@@ -286,6 +286,7 @@ combo_order <- function(keys, labels) {
 }
 
 rows <- list()
+rows[["n"]] <- sapply(groups, function(g) sum(demo$group == g, na.rm = TRUE))
 rows[["Age, mean (SD)"]] <- sapply(groups, function(g) {
   x <- demo$Age[demo$group == g]
   sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
