@@ -65,12 +65,16 @@ df <- df |>
     # Ensure Gender has every level in the scheme (code 3 is otherwise NA).
     Gender = factor(replace_na(as.character(Gender), "Self-described/Other"),
                     levels = gender_levels),
+    # Raw valence/intensity centred at 0 for -5 to +5 descriptives; the 1-11
+    # scale is kept for the models (z-scores are shift-invariant).
+    avg_valence_centered      = avg_valence_combined - 6,
+    avg_intensity_centered    = avg_intensity_combined - 6,
     # Pre-registered outcomes (z-scored for modelling).
     avg_valence_z             = as.numeric(scale(avg_valence_combined)),
     avg_intensity_z           = as.numeric(scale(avg_intensity_combined)),
     extent_log_z              = as.numeric(scale(log(extent_combined + 1))),
-    valence_by_extent_asinh_z   = as.numeric(scale(asinh(valence_by_extent_combined))),
-    intensity_by_extent_asinh_z = as.numeric(scale(asinh(intensity_by_extent_combined))),
+    valence_by_extent_log_z   = as.numeric(scale(log(valence_by_extent_combined + 1))),
+    intensity_by_extent_log_z = as.numeric(scale(log(intensity_by_extent_combined + 1))),
     # Exploratory spatial outcomes (z-scored for modelling).
     centroid_x_front_z        = as.numeric(scale(centroid_x_front)),
     centroid_y_front_z        = as.numeric(scale(centroid_y_front)),
@@ -84,8 +88,8 @@ df <- df |>
 
 # Raw (untransformed) columns for descriptives and distribution plots.
 pre_reg_raw <- c(
-  "Average Valence"     = "avg_valence_combined",
-  "Average Intensity"   = "avg_intensity_combined",
+  "Average Valence"     = "avg_valence_centered",
+  "Average Intensity"   = "avg_intensity_centered",
   "Extent"              = "extent_combined",
   "Valence x Extent"    = "valence_by_extent_combined",
   "Intensity x Extent"  = "intensity_by_extent_combined"
@@ -104,8 +108,8 @@ pre_reg_specs <- c(
   "Average Valence"           = "avg_valence_z",
   "Average Intensity"         = "avg_intensity_z",
   "Extent (log)"              = "extent_log_z",
-  "Valence x Extent (asinh)"    = "valence_by_extent_asinh_z",
-  "Intensity x Extent (asinh)"  = "intensity_by_extent_asinh_z"
+  "Valence x Extent (log)"    = "valence_by_extent_log_z",
+  "Intensity x Extent (log)"  = "intensity_by_extent_log_z"
 )
 
 exploratory_specs <- c(
@@ -259,7 +263,7 @@ cat(apa_tab_caption("Demographics and Outcome Descriptives by Group and Timepoin
 cat('<table>')
 cat('<thead><tr><th style="text-align:left;">Characteristic</th><th>Non-Gambler</th><th>Gambler</th></tr></thead>')
 cat('<tbody>', body, '</tbody></table>')
-cat("\n\n*Note.* Average Valence and Average Intensity are per-pixel means on a -5 to +5 scale (0 = midpoint). Valence \u00d7 Extent and Intensity \u00d7 Extent are raw summed products (heavily right-skewed; asinh-transformed for analysis). Cell *n*s are slightly below the group *n* where a participant drew nothing. Extent and the \u00d7-Extent metrics combine front and back views.\n\n")
+cat("\n\n*Note.* Average Valence and Average Intensity are per-pixel means on a -5 to +5 scale (0 = midpoint). Valence \u00d7 Extent and Intensity \u00d7 Extent are raw summed products (heavily right-skewed; log-transformed for analysis). Cell *n*s are slightly below the group *n* where a participant drew nothing. Extent and the \u00d7-Extent metrics combine front and back views.\n\n")
 ```
 
 # Outcome measures
@@ -323,8 +327,8 @@ Each pre-registered outcome is modelled with
 
 $$\text{outcome}_z \sim \text{timepoint} \times \text{group} + (1 \mid \text{PID})$$
 
-using `lmerTest::lmer` with Satterthwaite degrees of freedom. Extent is log-transformed and the two extent-products are asinh-transformed
-before standardising, to reduce skew.
+using `lmerTest::lmer` with Satterthwaite degrees of freedom. Extent and the two
+extent-products are log-transformed before standardising, to reduce skew.
 
 ```{r fit-lme, results='hide'}
 study1_lme <- setNames(lapply(all_specs, function(dv) fit_lme(dv, df)),

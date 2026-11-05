@@ -152,10 +152,8 @@ summarize_pixel_maps <- function(all_raw, reachable_lookup) {
 
       tibble(
         n_pixels        = nrow(df),
-        # Valence/intensity were scored on a -5 to +5 scale (0 = midpoint); the
-        # pixel CSVs store them as 1..11, so subtract 6 to centre at 0.
-        sum_valence     = sum(df$valence - 6, na.rm = TRUE),
-        sum_intensity   = sum(df$intensity - 6, na.rm = TRUE),
+        sum_valence     = sum(df$valence, na.rm = TRUE),
+        sum_intensity   = sum(df$intensity, na.rm = TRUE),
         centroid_x      = mean(df$x, na.rm = TRUE),
         centroid_y      = mean(df$y, na.rm = TRUE),
         sd_x            = sd(df$x, na.rm = TRUE),

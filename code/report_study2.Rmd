@@ -66,6 +66,8 @@ df <- df |>
     # Ensure Gender has every level in the scheme (code 3 is otherwise NA).
     Gender = factor(replace_na(as.character(Gender), "Self-described/Other"),
                     levels = gender_levels),
+    # Valence centred at 0 for -5 to +5 descriptives (z-score is shift-invariant).
+    avg_valence_centered = avg_valence_combined - 6,
     # The four pre-registered outcomes (z-scored within study).
     avg_valence_z       = as.numeric(scale(avg_valence_combined)),
     centroid_y_front_z  = as.numeric(scale(centroid_y_front)),
@@ -78,7 +80,7 @@ df <- df |>
 
 # Raw columns for descriptives and distributions.
 pre_reg_raw <- c(
-  "Valence"      = "avg_valence_combined",
+  "Valence"      = "avg_valence_centered",
   "Centroid y"   = "centroid_y_front",
   "SD x"         = "sd_x_front",
   "Entropy (15)" = "entropy_15_front"
